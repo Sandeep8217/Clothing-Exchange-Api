@@ -1,0 +1,5 @@
+spring:
+  application:
+    name: clothing-exchange-api
+  mongodb:
+    uri: ${MONGODB_URI}
