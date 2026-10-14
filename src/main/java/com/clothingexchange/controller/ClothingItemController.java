@@ -106,4 +106,30 @@ public class ClothingItemController {
         return ResponseEntity.noContent().build();
     }
 
+
+    @GetMapping("/category/{category}")
+    public List<ClothingItem> getListingsByCategory(
+            @PathVariable String category) {
+        return clothingItemService.getListingsByCategory(category);
+    }
+
+    @GetMapping("/size/{size}")
+    public List<ClothingItem> getListingsBySize(
+            @PathVariable String size) {
+        return clothingItemService.getListingsBySize(size);
+    }
+
+    @GetMapping("/brand/{brand}")
+    public List<ClothingItem> getListingsByBrand(
+            @PathVariable String brand) {
+        return clothingItemService.getListingsByBrand(brand);
+    }
+
+    @GetMapping("/condition/{condition}")
+    public List<ClothingItem> getListingsByCondition(
+            @PathVariable String condition) {
+        return clothingItemService.getListingsByCondition(condition);
+    }
+
+
 }

@@ -80,4 +80,25 @@ public class ClothingItemService {
         clothingItemRepository.delete(existingItem);
     }
 
+
+    public List<ClothingItem> getListingsByCategory(String category) {
+        return clothingItemRepository
+                .findByCategoryIgnoreCaseAndStatus(category, "AVAILABLE");
+    }
+
+    public List<ClothingItem> getListingsBySize(String size) {
+        return clothingItemRepository
+                .findBySizeIgnoreCaseAndStatus(size, "AVAILABLE");
+    }
+
+    public List<ClothingItem> getListingsByBrand(String brand) {
+        return clothingItemRepository
+                .findByBrandContainingIgnoreCaseAndStatus(brand, "AVAILABLE");
+    }
+
+    public List<ClothingItem> getListingsByCondition(String condition) {
+        return clothingItemRepository
+                .findByConditionIgnoreCaseAndStatus(condition, "AVAILABLE");
+    }
+
 }

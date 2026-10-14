@@ -19,4 +19,22 @@ public interface ClothingItemRepository
 
     Optional<ClothingItem> findByIdAndOwnerId(
             String id, String ownerId);
+
+
+    List<ClothingItem> findByCategoryIgnoreCaseAndStatus(
+            String category, String status);
+
+    List<ClothingItem> findBySizeIgnoreCaseAndStatus(
+            String size, String status);
+
+    List<ClothingItem> findByBrandContainingIgnoreCaseAndStatus(
+            String brand, String status);
+
+    List<ClothingItem> findByConditionIgnoreCaseAndStatus(
+            String condition, String status);
+
+
+    boolean existsByIdAndOwnerId(String id, String ownerId);
+
+
 }
