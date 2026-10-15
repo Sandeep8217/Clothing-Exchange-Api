@@ -1,6 +1,7 @@
 
 package com.clothingexchange.controller;
 
+import com.clothingexchange.dto.SwapRequestResponse;
 import com.clothingexchange.model.SwapRequest;
 import com.clothingexchange.service.SwapRequestService;
 import org.springframework.http.HttpStatus;
@@ -46,16 +47,19 @@ public class SwapRequestController {
     }
 
     @GetMapping("/my-requests")
-    public List<SwapRequest> getMySwapRequests(
+    public List<SwapRequestResponse> getMySwapRequests(
             Authentication authentication) {
-        return swapRequestService.getMySwapRequests(authentication.getName());
+        return swapRequestService.getMySwapRequestResponses(
+                authentication.getName()
+        );
     }
 
     @GetMapping("/incoming")
-    public List<SwapRequest> getIncomingSwapRequests(
+    public List<SwapRequestResponse> getIncomingSwapRequests(
             Authentication authentication) {
-        return swapRequestService.getIncomingSwapRequests(
-                authentication.getName());
+        return swapRequestService.getIncomingSwapRequestResponses(
+                authentication.getName()
+        );
     }
 
     @PatchMapping("/{id}/accept")

@@ -49,6 +49,7 @@ public class SecurityConfig {
                                 "/api/clothing/brand/**",
                                 "/api/clothing/condition/**"
                         ).permitAll()
+                        .requestMatchers("/ws", "/ws/**").permitAll()
                         .anyRequest().authenticated()
                 )
                 .addFilterBefore(
@@ -74,6 +75,8 @@ public class SecurityConfig {
         configuration.setAllowedHeaders(
                 List.of("Authorization", "Content-Type")
         );
+
+        configuration.setAllowCredentials(true);
 
         UrlBasedCorsConfigurationSource source =
                 new UrlBasedCorsConfigurationSource();

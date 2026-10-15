@@ -1,19 +1,26 @@
-
 package com.clothingexchange.service;
 
+import com.clothingexchange.dto.SwapRequestResponse;
 import com.clothingexchange.model.ClothingItem;
 import com.clothingexchange.model.SwapRequest;
 import com.clothingexchange.repository.ClothingItemRepository;
 import com.clothingexchange.repository.SwapRequestRepository;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 public class SwapRequestService {
+
+    private static final Logger log =
+            LoggerFactory.getLogger(SwapRequestService.class);
 
     private final SwapRequestRepository swapRequestRepository;
     private final ClothingItemRepository clothingItemRepository;
@@ -30,43 +37,76 @@ public class SwapRequestService {
             String requestedItemId,
             String offeredItemId) {
 
+        log.info(
+                "Creating swap: requesterId={}, requestedItemId={}, offeredItemId={}",
+                requesterId,
+                requestedItemId,
+                offeredItemId
+        );
+
         ClothingItem requestedItem = clothingItemRepository
                 .findById(requestedItemId)
-                .orElseThrow(() -> new ResponseStatusException(
-                        HttpStatus.NOT_FOUND,
-                        "Requested clothing item not found"));
+                .orElseThrow(() -> {
+                    log.warn("Requested clothing item not found: {}", requestedItemId);
+                    return new ResponseStatusException(
+                            HttpStatus.NOT_FOUND,
+                            "Requested clothing item not found");
+                });
 
         ClothingItem offeredItem = clothingItemRepository
                 .findById(offeredItemId)
-                .orElseThrow(() -> new ResponseStatusException(
-                        HttpStatus.NOT_FOUND,
-                        "Offered clothing item not found"));
+                .orElseThrow(() -> {
+                    log.warn("Offered clothing item not found: {}", offeredItemId);
+                    return new ResponseStatusException(
+                            HttpStatus.NOT_FOUND,
+                            "Offered clothing item not found");
+                });
 
-        if (requestedItem.getOwnerId().equals(requesterId)) {
+        log.info(
+                "Swap items found: requestedOwnerId={}, requestedStatus={}, offeredOwnerId={}, offeredStatus={}",
+                requestedItem.getOwnerId(),
+                requestedItem.getStatus(),
+                offeredItem.getOwnerId(),
+                offeredItem.getStatus()
+        );
+
+        if (requesterId.equals(requestedItem.getOwnerId())) {
+            log.warn("Swap rejected: requester attempted to request their own item");
+
             throw new ResponseStatusException(
                     HttpStatus.BAD_REQUEST,
                     "You cannot request your own clothing item");
         }
 
         if (!requesterId.equals(offeredItem.getOwnerId())) {
+            log.warn("Swap rejected: offered item does not belong to requester");
+
             throw new ResponseStatusException(
                     HttpStatus.FORBIDDEN,
                     "You can only offer clothing items that you own");
         }
 
         if (requestedItemId.equals(offeredItemId)) {
+            log.warn("Swap rejected: requested and offered item IDs are identical");
+
             throw new ResponseStatusException(
                     HttpStatus.BAD_REQUEST,
                     "Requested and offered items must be different");
         }
 
         if (!"AVAILABLE".equals(requestedItem.getStatus())) {
+            log.warn("Swap rejected: requested item status is {}",
+                    requestedItem.getStatus());
+
             throw new ResponseStatusException(
                     HttpStatus.CONFLICT,
                     "Requested clothing item is not available");
         }
 
         if (!"AVAILABLE".equals(offeredItem.getStatus())) {
+            log.warn("Swap rejected: offered item status is {}",
+                    offeredItem.getStatus());
+
             throw new ResponseStatusException(
                     HttpStatus.CONFLICT,
                     "Offered clothing item is not available");
@@ -84,7 +124,11 @@ public class SwapRequestService {
                 .updatedAt(now)
                 .build();
 
-        return swapRequestRepository.save(swapRequest);
+        SwapRequest savedRequest = swapRequestRepository.save(swapRequest);
+
+        log.info("Swap request created successfully: id={}", savedRequest.getId());
+
+        return savedRequest;
     }
 
     public List<SwapRequest> getMySwapRequests(String requesterId) {
@@ -102,14 +146,12 @@ public class SwapRequestService {
                         HttpStatus.NOT_FOUND,
                         "Swap request not found"));
 
-        // Only the requested item's owner can accept.
         if (!ownerId.equals(swapRequest.getOwnerId())) {
             throw new ResponseStatusException(
                     HttpStatus.FORBIDDEN,
                     "Only the clothing item owner can accept this request");
         }
 
-        // A completed or rejected request cannot be processed again.
         if (!"PENDING".equals(swapRequest.getStatus())) {
             throw new ResponseStatusException(
                     HttpStatus.CONFLICT,
@@ -128,7 +170,6 @@ public class SwapRequestService {
                         HttpStatus.NOT_FOUND,
                         "Offered clothing item not found"));
 
-        // Both items must still be available.
         if (!"AVAILABLE".equals(requestedItem.getStatus())
                 || !"AVAILABLE".equals(offeredItem.getStatus())) {
             throw new ResponseStatusException(
@@ -136,14 +177,12 @@ public class SwapRequestService {
                     "One or both clothing items are no longer available");
         }
 
-        // Mark both items as swapped.
         requestedItem.setStatus("SWAPPED");
         offeredItem.setStatus("SWAPPED");
 
         clothingItemRepository.save(requestedItem);
         clothingItemRepository.save(offeredItem);
 
-        // Update the swap request.
         swapRequest.setStatus("ACCEPTED");
         swapRequest.setUpdatedAt(LocalDateTime.now());
 
@@ -157,7 +196,6 @@ public class SwapRequestService {
                         HttpStatus.NOT_FOUND,
                         "Swap request not found"));
 
-        // Only the requested item's owner can reject.
         if (!ownerId.equals(swapRequest.getOwnerId())) {
             throw new ResponseStatusException(
                     HttpStatus.FORBIDDEN,
@@ -174,5 +212,40 @@ public class SwapRequestService {
         swapRequest.setUpdatedAt(LocalDateTime.now());
 
         return swapRequestRepository.save(swapRequest);
+    }
+
+    private SwapRequestResponse toResponse(SwapRequest request) {
+
+        ClothingItem requestedItem = clothingItemRepository
+                .findById(request.getRequestedItemId())
+                .orElse(null);
+
+        ClothingItem offeredItem = clothingItemRepository
+                .findById(request.getOfferedItemId())
+                .orElse(null);
+
+        return SwapRequestResponse.from(
+                request,
+                requestedItem,
+                offeredItem
+        );
+    }
+
+    public List<SwapRequestResponse> getMySwapRequestResponses(
+            String requesterId) {
+
+        return swapRequestRepository.findByRequesterId(requesterId)
+                .stream()
+                .map(this::toResponse)
+                .collect(Collectors.toList());
+    }
+
+    public List<SwapRequestResponse> getIncomingSwapRequestResponses(
+            String ownerId) {
+
+        return swapRequestRepository.findByOwnerId(ownerId)
+                .stream()
+                .map(this::toResponse)
+                .collect(Collectors.toList());
     }
 }
