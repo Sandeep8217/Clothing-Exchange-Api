@@ -123,18 +123,30 @@ export default function MyWardrobe() {
                                     key={id}
                                     className="overflow-hidden rounded-2xl border bg-white shadow-sm transition hover:shadow-md"
                                 >
-                                    {item.imageUrl ? (
-                                        <img
-                                            src={item.imageUrl}
-                                            alt={item.title || item.name || "Clothing item"}
-                                            className="h-56 w-full object-cover"
-                                        />
-                                    ) : (
-                                        <div
-                                            className="flex h-56 items-center justify-center bg-gray-100 text-gray-400">
-                                            No image available
-                                        </div>
-                                    )}
+
+                                    {(() => {
+                                        const imageUrl =
+                                            item.imageUrl ||
+                                            item.imageUrls?.[0] ||
+                                            item.images?.[0] ||
+                                            "";
+
+                                        return imageUrl ? (
+                                            <img
+                                                src={imageUrl}
+                                                alt={item.title || "Clothing item"}
+                                                className="h-48 w-full object-cover"
+                                                onError={(e) => {
+                                                    e.currentTarget.style.display = "none";
+                                                }}
+                                            />
+                                        ) : (
+                                            <div className="flex h-56 items-center justify-center bg-gray-100 text-gray-400">
+                                                No image available
+                                            </div>
+                                        );
+                                    })()}
+
 
                                     <div className="p-5">
                                         <div className="mb-3 flex items-start justify-between gap-3">
