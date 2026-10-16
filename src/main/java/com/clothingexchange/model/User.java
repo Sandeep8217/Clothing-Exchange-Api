@@ -31,6 +31,8 @@ public class User {
 
     private String profileImageUrl;
 
+    private String bio;
+
     @Builder.Default
     private String role = "USER";
 
