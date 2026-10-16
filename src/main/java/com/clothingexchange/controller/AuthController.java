@@ -51,13 +51,18 @@ public class AuthController {
         ));
     }
 
+
     private Map<String, Object> toUserResponse(User user) {
         return Map.of(
                 "id", user.getId(),
                 "fullName", user.getFullName(),
                 "email", user.getEmail(),
-                "city", user.getCity(),
-                "role", user.getRole()
+                "city", user.getCity() == null ? "" : user.getCity(),
+                "role", user.getRole(),
+                "profileImageUrl", user.getProfileImageUrl() == null
+                        ? ""
+                        : user.getProfileImageUrl()
         );
     }
+
 }

@@ -54,6 +54,7 @@ export default function useAuth() {
         setAuthError("");
     }
 
+
     return {
         user,
         token,
@@ -63,6 +64,8 @@ export default function useAuth() {
         login,
         register,
         logout,
-        setAuthError
+        setAuthError,
+        setUser,
     };
+
 }

@@ -1,7 +1,12 @@
 import {useEffect, useState} from "react";
-import {getClothing, getMyListings, createClothing} from "../api/clothing";
 import {createSwap} from "../api/swaps";
 import useAuth from "./useAuth";
+import {
+    getClothing,
+    getClothingWithSellers,
+    getMyListings,
+    createClothing,
+} from "../api/clothing";
 
 export const categories = ["All", "Tops", "Bottoms", "Jackets", "Shoes", "Accessories"];
 
@@ -38,10 +43,23 @@ export default function useMarketplace() {
     const [form, setForm] = useState({fullName: "", email: "", password: "", phone: "", city: ""});
 
     useEffect(() => {
-        getClothing()
-            .then((data) => setClothes(Array.isArray(data) ? data : []))
-            .catch((err) => setError(err.message || "Could not load clothing."))
-            .finally(() => setLoading(false));
+        getClothingWithSellers()
+            .then((data) => {
+                const listings = Array.isArray(data) ? data : [];
+
+                const enrichedListings = listings.map((entry) => ({
+                    ...entry.item,
+                    seller: entry.seller || null,
+                }));
+
+                setClothes(enrichedListings);
+            })
+            .catch((err) => {
+                setError(err.message || "Could not load clothing.");
+            })
+            .finally(() => {
+                setLoading(false);
+            });
     }, []);
 
     const filteredClothes = clothes.filter((item) => {
@@ -118,8 +136,16 @@ export default function useMarketplace() {
                 condition: "GOOD", imageUrl: "", estimatedSwapValue: "1000", city: "",
             });
             setShowAddClothing(false);
-            const updatedClothing = await getClothing();
-            setClothes(Array.isArray(updatedClothing) ? updatedClothing : []);
+            const updatedClothing = await getClothingWithSellers();
+
+            const enrichedListings = Array.isArray(updatedClothing)
+                ? updatedClothing.map((entry) => ({
+                    ...entry.item,
+                    seller: entry.seller || null,
+                }))
+                : [];
+
+            setClothes(enrichedListings);
         } catch (err) {
             setClothingError(err.message || "Could not add clothing.");
         } finally {

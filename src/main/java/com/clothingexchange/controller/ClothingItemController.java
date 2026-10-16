@@ -52,6 +52,14 @@ public class ClothingItemController {
         return clothingItemService.getAvailableListings();
     }
 
+
+    @GetMapping("/with-sellers")
+    public List<com.clothingexchange.dto.ClothingListingResponse>
+    getAvailableListingsWithSellers() {
+        return clothingItemService.getAvailableListingsWithSellers();
+    }
+
+
     @GetMapping("/city/{city}")
     public List<ClothingItem> getListingsByCity(
             @PathVariable String city) {

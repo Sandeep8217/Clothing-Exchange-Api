@@ -4,18 +4,29 @@ package com.clothingexchange.service;
 import com.clothingexchange.model.ClothingItem;
 import com.clothingexchange.repository.ClothingItemRepository;
 import org.springframework.stereotype.Service;
+import com.clothingexchange.dto.SellerSummary;
+import com.clothingexchange.model.User;
+import com.clothingexchange.repository.UserRepository;
+
+import java.util.Map;
+import java.util.stream.Collectors;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.ArrayList;
 
 @Service
 public class ClothingItemService {
 
     private final ClothingItemRepository clothingItemRepository;
+    private final UserRepository userRepository;
 
     public ClothingItemService(
-            ClothingItemRepository clothingItemRepository) {
+            ClothingItemRepository clothingItemRepository,
+            UserRepository userRepository
+    ) {
         this.clothingItemRepository = clothingItemRepository;
+        this.userRepository = userRepository;
     }
 
     public ClothingItem createListing(ClothingItem item, String ownerId) {
@@ -100,5 +111,45 @@ public class ClothingItemService {
         return clothingItemRepository
                 .findByConditionIgnoreCaseAndStatus(condition, "AVAILABLE");
     }
+
+    public Map<String, SellerSummary> getSellerSummaries(
+            List<ClothingItem> items
+    ) {
+        return items.stream()
+                .map(ClothingItem::getOwnerId)
+                .filter(ownerId -> ownerId != null && !ownerId.isBlank())
+                .distinct()
+                .map(ownerId -> userRepository.findById(ownerId)
+                        .filter(User::isActive)
+                        .map(user -> new SellerSummary(
+                                user.getId(),
+                                user.getFullName(),
+                                user.getCity(),
+                                user.getProfileImageUrl()
+                        ))
+                        .orElse(null))
+                .filter(summary -> summary != null)
+                .collect(Collectors.toMap(
+                        SellerSummary::id,
+                        summary -> summary
+                ));
+    }
+
+
+    public List<com.clothingexchange.dto.ClothingListingResponse>
+    getAvailableListingsWithSellers() {
+
+        List<ClothingItem> items = getAvailableListings();
+
+        var sellers = getSellerSummaries(items);
+
+        return items.stream()
+                .map(item -> new com.clothingexchange.dto.ClothingListingResponse(
+                        item,
+                        sellers.get(item.getOwnerId())
+                ))
+                .toList();
+    }
+
 
 }

@@ -90,6 +90,35 @@ export default function ClothingGrid(props) {
                                     </div>
 
                                     <div className="p-5">
+
+                                        {/* Seller information */}
+                                        <div className="mb-4 flex items-center gap-3">
+                                            {item.seller?.profileImageUrl ? (
+                                                <img
+                                                    src={item.seller.profileImageUrl}
+                                                    alt={item.seller.fullName || "Seller"}
+                                                    className="h-10 w-10 rounded-full border border-stone-200 object-cover"
+                                                    onError={(event) => {
+                                                        event.currentTarget.onerror = null;
+                                                        event.currentTarget.style.display = "none";
+                                                    }}
+                                                />
+                                            ) : (
+                                                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-emerald-100 font-bold text-emerald-800">
+                                                    {(item.seller?.fullName || "R").charAt(0).toUpperCase()}
+                                                </div>
+                                            )}
+
+                                            <div className="min-w-0">
+                                                <p className="truncate text-sm font-semibold text-stone-800">
+                                                    {item.seller?.fullName || "ReWear Member"}
+                                                </p>
+                                                <p className="truncate text-xs text-stone-500">
+                                                    {item.seller?.city || item.city || "Location not provided"}
+                                                </p>
+                                            </div>
+                                        </div>
+
                                         <div className="flex items-start justify-between gap-3">
                                             <div>
                                                 <p className="text-xs font-semibold uppercase tracking-wide text-stone-500">{item.brand}</p>

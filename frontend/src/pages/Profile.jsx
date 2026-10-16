@@ -2,6 +2,7 @@
 import { useEffect, useState } from "react";
 import { getProfile, updateProfile } from "../api/profile";
 import { uploadClothingImage } from "../api/cloudinary";
+import useAuth from "../hooks/useAuth";
 
 const EMPTY_PROFILE = {
     fullName: "",
@@ -12,7 +13,7 @@ const EMPTY_PROFILE = {
     profileImageUrl: "",
 };
 
-export default function Profile() {
+export default function Profile({ user, setUser }) {
     const [profile, setProfile] = useState(EMPTY_PROFILE);
     const [form, setForm] = useState(EMPTY_PROFILE);
     const [editing, setEditing] = useState(false);
@@ -21,6 +22,7 @@ export default function Profile() {
     const [uploading, setUploading] = useState(false);
     const [error, setError] = useState("");
     const [notice, setNotice] = useState("");
+    // const { user, setUser } = useAuth();
 
     async function loadProfile() {
         setLoading(true);
@@ -100,26 +102,17 @@ export default function Profile() {
             setEditing(false);
             setNotice("Profile updated successfully!");
 
-            // Keep cached account details consistent where possible.
-            try {
-                const storedUser = localStorage.getItem("rewearUser");
-                if (storedUser) {
-                    const cachedUser = JSON.parse(storedUser);
-                    localStorage.setItem(
-                        "rewearUser",
-                        JSON.stringify({
-                            ...cachedUser,
-                            fullName: nextProfile.fullName,
-                            city: nextProfile.city,
-                            phone: nextProfile.phone,
-                            profileImageUrl: nextProfile.profileImageUrl,
-                            bio: nextProfile.bio,
-                        })
-                    );
-                }
-            } catch {
-                // The backend update has already succeeded.
-            }
+            const updatedUser = {
+                ...user,
+                fullName: nextProfile.fullName,
+                city: nextProfile.city,
+                phone: nextProfile.phone,
+                profileImageUrl: nextProfile.profileImageUrl,
+                bio: nextProfile.bio,
+            };
+
+            setUser(updatedUser);
+            localStorage.setItem("rewearUser", JSON.stringify(updatedUser));
         } catch (err) {
             setError(err.message || "Could not save your profile.");
         } finally {

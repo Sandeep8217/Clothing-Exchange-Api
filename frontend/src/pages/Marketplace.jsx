@@ -1,5 +1,4 @@
 import {useEffect, useState} from "react";
-import {getClothing, getMyListings, createClothing} from "../api/clothing";
 import {createSwap} from "../api/swaps";
 import useAuth from "../hooks/useAuth";
 import Navbar from "../components/layout/Navbar";
@@ -14,6 +13,11 @@ import AddClothingModal from "../components/modals/AddClothingModal";
 import MyWardrobe from "./MyWardrobe";
 import MySwaps from "./MySwaps";
 import Profile from "./Profile";
+import {
+    getClothingWithSellers,
+    getMyListings,
+    createClothing,
+} from "../api/clothing";
 
 const categories = ["All", "Tops", "Bottoms", "Jackets", "Shoes", "Accessories"];
 
@@ -30,7 +34,8 @@ export default function Marketplace() {
     const [authMode, setAuthMode] = useState(null);
     const [authMessage, setAuthMessage] = useState("");
 
-    const {user, authLoading, authError, login, register, logout: logoutUser, setAuthError,} = useAuth();
+    const {user, setUser , authLoading, authError, login, register, logout: logoutUser, setAuthError} = useAuth();
+    console.log("NAVBAR USER:", user);
 
     const [selectedItem, setSelectedItem] = useState(null);
     const [myListings, setMyListings] = useState([]);
@@ -67,9 +72,20 @@ export default function Marketplace() {
     });
 
     useEffect(() => {
-        getClothing()
-            .then((data) => setClothes(Array.isArray(data) ? data : []))
-            .catch((err) => setError(err.message || "Could not load clothing."))
+        getClothingWithSellers()
+            .then((data) => {
+                const listings = Array.isArray(data) ? data : [];
+
+                const enrichedListings = listings.map((entry) => ({
+                    ...entry.item,
+                    seller: entry.seller || null,
+                }));
+
+                setClothes(enrichedListings);
+            })
+            .catch((err) => {
+                setError(err.message || "Could not load clothing.");
+            })
             .finally(() => setLoading(false));
     }, []);
 
@@ -188,8 +204,16 @@ export default function Marketplace() {
 
             setShowAddClothing(false);
 
-            const updatedClothing = await getClothing();
-            setClothes(Array.isArray(updatedClothing) ? updatedClothing : []);
+            const updatedClothing = await getClothingWithSellers();
+
+            const enrichedListings = Array.isArray(updatedClothing)
+                ? updatedClothing.map((entry) => ({
+                    ...entry.item,
+                    seller: entry.seller || null,
+                }))
+                : [];
+
+            setClothes(enrichedListings);
         } catch (error) {
             setClothingError(error.message || "Could not add clothing.");
         } finally {
@@ -279,7 +303,7 @@ export default function Marketplace() {
             ) : activePage === "swaps" ? (
                 <MySwaps />
             ) : activePage === "profile" ? (
-                <Profile />
+                <Profile user={user} setUser={setUser} />
             ) : (
                 <main>
                     <Hero />
