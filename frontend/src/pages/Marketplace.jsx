@@ -18,6 +18,7 @@ import {
     getMyListings,
     createClothing,
 } from "../api/clothing";
+import AdminDashboard from "./AdminDashboard";
 
 const categories = ["All", "Tops", "Bottoms", "Jackets", "Shoes", "Accessories"];
 
@@ -35,7 +36,6 @@ export default function Marketplace() {
     const [authMessage, setAuthMessage] = useState("");
 
     const {user, setUser , authLoading, authError, login, register, logout: logoutUser, setAuthError} = useAuth();
-    console.log("NAVBAR USER:", user);
 
     const [selectedItem, setSelectedItem] = useState(null);
     const [myListings, setMyListings] = useState([]);
@@ -298,7 +298,11 @@ export default function Marketplace() {
                 <div className="mx-auto mt-4 max-w-7xl px-5"><p
                     className="rounded-xl bg-emerald-50 p-3 text-sm text-emerald-800">{authMessage}</p></div>
             )}
-            {activePage === "wardrobe" ? (
+            {activePage === "admin" && user?.role === "ADMIN" ? (
+                    <AdminDashboard
+                        onExit={() => setActivePage("marketplace")}
+                    />
+            ) : activePage === "wardrobe" ? (
                 <MyWardrobe />
             ) : activePage === "swaps" ? (
                 <MySwaps />

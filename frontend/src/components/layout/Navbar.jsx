@@ -137,7 +137,8 @@ export default function Navbar({
         { id: "marketplace", label: "Explore", icon: "explore" },
         { id: "wardrobe", label: "My Wardrobe", icon: "wardrobe", auth: true },
         { id: "swaps", label: "My Swaps", icon: "swaps", auth: true },
-        { id: "profile", label: "Profile", icon: "profile", auth: true },
+        {id: "profile", label: "Profile", icon: "profile", auth: true},
+        {id: "admin", label: "Admin Panel", icon: "profile", adminOnly: true,},
     ];
 
     function navigate(page) {
@@ -154,7 +155,11 @@ export default function Navbar({
 
     function renderNavLinks(mobile = false) {
         return navItems
-            .filter((item) => !item.auth || user)
+            .filter((item) => {
+                if (item.auth && !user) return false;
+                if (item.adminOnly && user?.role !== "ADMIN") return false;
+                return true;
+            })
             .map((item) => {
                 const active = activePage === item.id;
 
