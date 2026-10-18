@@ -1,4 +1,3 @@
-::: {align="center"}
 # ReWear --- Clothing Exchange Marketplace
 
 **Give clothes a second life. Swap what you own for what you want.**
