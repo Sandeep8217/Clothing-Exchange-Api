@@ -33,3 +33,11 @@ export function deleteAdminListing(listingId) {
         }
     );
 }
+export function getAdminAnalyticsSummary() {
+    return apiRequest("/admin/analytics/summary");
+}
+
+
+export function getAdminActivityLogs() {
+    return apiRequest("/admin/activity-logs");
+}

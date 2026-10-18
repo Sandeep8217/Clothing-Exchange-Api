@@ -1,0 +1,9 @@
+.env
+.env.*
+!.env.example
+.git
+.idea
+target
+frontend
+New folder
+*.log

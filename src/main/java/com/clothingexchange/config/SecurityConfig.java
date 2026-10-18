@@ -38,8 +38,14 @@ public class SecurityConfig {
                 .sessionManagement(session ->
                         session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
                 )
+
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/api/auth/**").permitAll()
+
+                        // Admin APIs: administrators only
+                        .requestMatchers("/api/admin/**").hasRole("ADMIN")
+
+                        // Public clothing browsing
                         .requestMatchers(
                                 HttpMethod.GET,
                                 "/api/clothing",
@@ -47,11 +53,17 @@ public class SecurityConfig {
                                 "/api/clothing/category/**",
                                 "/api/clothing/size/**",
                                 "/api/clothing/brand/**",
-                                "/api/clothing/condition/**"
+                                "/api/clothing/condition/**",
+                                "/api/clothing/with-sellers"
                         ).permitAll()
+
+                        // WebSocket handshake
                         .requestMatchers("/ws", "/ws/**").permitAll()
+
+                        // Everything else requires authentication
                         .anyRequest().authenticated()
                 )
+
                 .addFilterBefore(
                         jwtAuthenticationFilter,
                         UsernamePasswordAuthenticationFilter.class

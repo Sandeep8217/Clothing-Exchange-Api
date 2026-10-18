@@ -85,4 +85,20 @@ public class SwapRequestController {
 
         return ResponseEntity.ok(swapRequest);
     }
+
+
+    @PatchMapping("/{id}/confirm-completion")
+    public ResponseEntity<SwapRequest> confirmSwapCompletion(
+            @PathVariable String id,
+            Authentication authentication) {
+
+        SwapRequest swapRequest =
+                swapRequestService.confirmSwapCompletion(
+                        id,
+                        authentication.getName()
+                );
+
+        return ResponseEntity.ok(swapRequest);
+    }
+
 }

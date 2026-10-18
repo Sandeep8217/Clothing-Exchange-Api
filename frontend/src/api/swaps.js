@@ -21,3 +21,11 @@ export const acceptSwapRequest = (id) =>
 export const rejectSwapRequest = (id) =>
     apiRequest(`/swaps/${id}/reject`,
         {method: "PATCH"});
+
+
+export function confirmSwapCompletion(swapId) {
+    return apiRequest(
+        `/swaps/${encodeURIComponent(swapId)}/confirm-completion`,
+        { method: "PATCH" }
+    );
+}

@@ -37,4 +37,8 @@ public interface ClothingItemRepository
     boolean existsByIdAndOwnerId(String id, String ownerId);
 
 
+    long countByStatus(String status);
+
+
+
 }

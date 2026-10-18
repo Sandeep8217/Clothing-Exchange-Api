@@ -1,12 +1,13 @@
 import {useCallback, useEffect, useState} from "react";
+import ChatWindow from "../components/chat/ChatWindow";
+import { getUnreadMessageCount } from "../api/chatHistory";
 import {
     getMySwapRequests,
     getIncomingSwapRequests,
     acceptSwapRequest,
     rejectSwapRequest,
+    confirmSwapCompletion,
 } from "../api/swaps";
-import ChatWindow from "../components/chat/ChatWindow";
-import { getUnreadMessageCount } from "../api/chatHistory";
 
 export default function MySwaps() {
     const [activeTab, setActiveTab] = useState("incoming");
@@ -86,6 +87,32 @@ export default function MySwaps() {
             setBusyId(null);
         }
     }
+
+
+    async function handleConfirmCompletion(id) {
+        setBusyId(id);
+        setError("");
+        setNotice("");
+
+        try {
+            const updatedSwap = await confirmSwapCompletion(id);
+
+            await loadRequests();
+
+            if (updatedSwap.status === "COMPLETED") {
+                setNotice("Exchange completed successfully!");
+            } else {
+                setNotice(
+                    "Your confirmation is recorded. Waiting for the other participant."
+                );
+            }
+        } catch (err) {
+            setError(err.message || "Unable to confirm the exchange.");
+        } finally {
+            setBusyId(null);
+        }
+    }
+
 
     function getId(request) {
         return request.id ?? request._id;
@@ -227,6 +254,22 @@ export default function MySwaps() {
                             className="rounded-full border border-stone-300 px-5 py-2 text-sm font-semibold text-stone-700 hover:bg-stone-50 disabled:opacity-50"
                         >
                             Reject
+                        </button>
+                    </div>
+                )}
+                {status === "ACCEPTED" && (
+                    <div className="mt-5 border-t border-stone-100 pt-4">
+                        <p className="mb-3 text-sm text-stone-600">
+                            Confirm that you have completed the physical clothing exchange.
+                        </p>
+
+                        <button
+                            type="button"
+                            onClick={() => handleConfirmCompletion(id)}
+                            disabled={busy}
+                            className="rounded-full bg-emerald-700 px-5 py-2 text-sm font-semibold text-white hover:bg-emerald-800 disabled:opacity-50"
+                        >
+                            {busy ? "Please wait..." : "Confirm Exchange"}
                         </button>
                     </div>
                 )}

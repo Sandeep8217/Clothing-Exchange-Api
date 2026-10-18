@@ -177,14 +177,32 @@ public class SwapRequestService {
                     "One or both clothing items are no longer available");
         }
 
-        requestedItem.setStatus("SWAPPED");
-        offeredItem.setStatus("SWAPPED");
+
+        requestedItem.setStatus("RESERVED");
+        offeredItem.setStatus("RESERVED");
 
         clothingItemRepository.save(requestedItem);
         clothingItemRepository.save(offeredItem);
 
+// Reject other pending requests involving either swapped item.
+        List<SwapRequest> conflictingRequests =
+                swapRequestRepository.findPendingRequestsInvolvingItems(
+                        requestedItem.getId(),
+                        offeredItem.getId()
+                );
+
+        LocalDateTime now = LocalDateTime.now();
+
+        for (SwapRequest conflictingRequest : conflictingRequests) {
+            if (!conflictingRequest.getId().equals(swapRequest.getId())) {
+                conflictingRequest.setStatus("REJECTED");
+                conflictingRequest.setUpdatedAt(now);
+                swapRequestRepository.save(conflictingRequest);
+            }
+        }
+
         swapRequest.setStatus("ACCEPTED");
-        swapRequest.setUpdatedAt(LocalDateTime.now());
+        swapRequest.setUpdatedAt(now);
 
         return swapRequestRepository.save(swapRequest);
     }
@@ -248,4 +266,63 @@ public class SwapRequestService {
                 .map(this::toResponse)
                 .collect(Collectors.toList());
     }
+
+
+    public SwapRequest confirmSwapCompletion(String swapId, String userId) {
+
+        SwapRequest swapRequest = swapRequestRepository.findById(swapId)
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.NOT_FOUND,
+                        "Swap request not found"
+                ));
+
+        if (!"ACCEPTED".equals(swapRequest.getStatus())) {
+            throw new ResponseStatusException(
+                    HttpStatus.CONFLICT,
+                    "Only accepted swaps can be confirmed"
+            );
+        }
+
+        if (userId.equals(swapRequest.getRequesterId())) {
+            swapRequest.setRequesterConfirmed(true);
+        } else if (userId.equals(swapRequest.getOwnerId())) {
+            swapRequest.setOwnerConfirmed(true);
+        } else {
+            throw new ResponseStatusException(
+                    HttpStatus.FORBIDDEN,
+                    "Only participants can confirm this swap"
+            );
+        }
+
+        if (swapRequest.isRequesterConfirmed()
+                && swapRequest.isOwnerConfirmed()) {
+
+            ClothingItem requestedItem = clothingItemRepository
+                    .findById(swapRequest.getRequestedItemId())
+                    .orElseThrow(() -> new ResponseStatusException(
+                            HttpStatus.NOT_FOUND,
+                            "Requested clothing item not found"
+                    ));
+
+            ClothingItem offeredItem = clothingItemRepository
+                    .findById(swapRequest.getOfferedItemId())
+                    .orElseThrow(() -> new ResponseStatusException(
+                            HttpStatus.NOT_FOUND,
+                            "Offered clothing item not found"
+                    ));
+
+            requestedItem.setStatus("SWAPPED");
+            offeredItem.setStatus("SWAPPED");
+
+            clothingItemRepository.save(requestedItem);
+            clothingItemRepository.save(offeredItem);
+
+            swapRequest.setStatus("COMPLETED");
+        }
+
+        swapRequest.setUpdatedAt(LocalDateTime.now());
+
+        return swapRequestRepository.save(swapRequest);
+    }
+
 }

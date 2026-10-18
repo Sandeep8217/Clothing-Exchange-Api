@@ -34,4 +34,10 @@ public class SwapRequest {
     private LocalDateTime createdAt;
 
     private LocalDateTime updatedAt;
+
+    @Builder.Default
+    private boolean requesterConfirmed = false;
+
+    @Builder.Default
+    private boolean ownerConfirmed = false;
 }

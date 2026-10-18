@@ -5,7 +5,24 @@ import {
     updateAdminUserStatus,
     getAdminListings,
     deleteAdminListing,
+    getAdminAnalyticsSummary,
 } from "../api/admin";
+
+import {
+    ResponsiveContainer,
+    BarChart,
+    Bar,
+    XAxis,
+    YAxis,
+    CartesianGrid,
+    Tooltip,
+    PieChart,
+    Pie,
+    Cell,
+    Legend,
+} from "recharts";
+
+import AdminActivityLogs from "../components/admin/AdminActivityLogs";
 
 const metrics = [
     {
@@ -51,6 +68,25 @@ export default function AdminDashboard({onExit}) {
     const [listingSearch, setListingSearch] = useState("");
     const [deletingListingId, setDeletingListingId] = useState(null);
     const [pendingListing, setPendingListing] = useState(null);
+    const [analytics, setAnalytics] = useState(null);
+    const [analyticsLoading, setAnalyticsLoading] = useState(true);
+    const [analyticsError, setAnalyticsError] = useState("");
+
+    const loadAnalytics = useCallback(async () => {
+        setAnalyticsLoading(true);
+        setAnalyticsError("");
+
+        try {
+            const data = await getAdminAnalyticsSummary();
+            setAnalytics(data);
+        } catch (err) {
+            setAnalyticsError(
+                err.message || "Unable to load analytics."
+            );
+        } finally {
+            setAnalyticsLoading(false);
+        }
+    }, []);
 
     const loadListings = useCallback(async () => {
         setListingsLoading(true);
@@ -98,7 +134,37 @@ export default function AdminDashboard({onExit}) {
         loadDashboard();
         loadUsers();
         loadListings();
-    }, [loadDashboard, loadUsers, loadListings]);
+        loadAnalytics();
+    }, [loadDashboard, loadUsers, loadListings, loadAnalytics]);
+
+    const communityData = analytics
+        ? [
+            {name: "Active users", value: analytics.activeUsers ?? 0},
+            {name: "Inactive users", value: analytics.inactiveUsers ?? 0},
+            {name: "Available listings", value: analytics.availableListings ?? 0},
+            {name: "Swapped listings", value: analytics.swappedListings ?? 0},
+        ]
+        : [];
+
+    const swapData = analytics
+        ? [
+            {name: "Pending", value: analytics.pendingSwaps ?? 0},
+            {name: "Accepted", value: analytics.acceptedSwaps ?? 0},
+            {name: "Rejected", value: analytics.rejectedSwaps ?? 0},
+        ]
+        : [];
+
+    const overviewData = analytics
+        ? [
+            {name: "Users", total: analytics.totalUsers ?? 0},
+            {name: "Active users", total: analytics.activeUsers ?? 0},
+            {name: "Listings", total: analytics.totalListings ?? 0},
+            {name: "Pending swaps", total: analytics.pendingSwaps ?? 0},
+            {name: "Accepted swaps", total: analytics.acceptedSwaps ?? 0},
+        ]
+        : [];
+
+    const chartColors = ["#15803d", "#d97706", "#0284c7", "#7c3aed"];
 
     const filteredUsers = useMemo(() => {
         const query = search.trim().toLowerCase();
@@ -537,6 +603,189 @@ export default function AdminDashboard({onExit}) {
                         )}
                     </div>
                 </section>
+                <section className="mt-10 pb-8">
+                    <div className="mb-5 flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
+                        <div>
+                            <h2 className="text-xl font-semibold">Admin Analytics</h2>
+                            <p className="mt-1 text-sm text-[#718174]">
+                                Current community metrics and marketplace activity.
+                            </p>
+                        </div>
+
+                        <button
+                            onClick={loadAnalytics}
+                            disabled={analyticsLoading}
+                            className="rounded-xl border border-[#dbe5d9] bg-white px-4 py-2 text-sm font-semibold hover:bg-[#edf4eb] disabled:opacity-50"
+                        >
+                            Refresh analytics
+                        </button>
+                    </div>
+
+                    {analyticsError && (
+                        <div role="alert"
+                             className="mb-4 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
+                            {analyticsError}
+                            <button
+                                onClick={loadAnalytics}
+                                className="ml-3 font-semibold underline"
+                            >
+                                Retry
+                            </button>
+                        </div>
+                    )}
+
+                    {analyticsLoading ? (
+                        <p className="rounded-2xl border border-[#e4e9df] bg-white p-8 text-center text-sm text-[#718174]">
+                            Loading analytics…
+                        </p>
+                    ) : analytics ? (
+                        <>
+                            <div className="mb-5 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+                                {[
+                                    ["Total users", analytics.totalUsers],
+                                    ["Inactive users", analytics.inactiveUsers],
+                                    ["Available listings", analytics.availableListings],
+                                    ["Accepted swaps", analytics.acceptedSwaps],
+                                ].map(([label, value]) => (
+                                    <div
+                                        key={label}
+                                        className="rounded-2xl border border-[#e4e9df] bg-white p-5 shadow-sm"
+                                    >
+                                        <p className="text-sm text-[#718174]">{label}</p>
+                                        <p className="mt-3 text-3xl font-semibold">
+                                            {(value ?? 0).toLocaleString()}
+                                        </p>
+                                    </div>
+                                ))}
+                            </div>
+
+                            <div className="grid gap-5 xl:grid-cols-2">
+                                <section className="rounded-2xl border border-[#e4e9df] bg-white p-5 shadow-sm">
+                                    <h3 className="font-semibold">Community overview</h3>
+                                    <p className="mt-1 text-sm text-[#718174]">
+                                        Compare current counts across key metrics.
+                                    </p>
+
+                                    <div className="mt-5 h-80">
+                                        <ResponsiveContainer width="100%" height="100%">
+                                            <BarChart
+                                                data={overviewData}
+                                                margin={{top: 10, right: 10, left: -15, bottom: 35}}
+                                            >
+                                                <CartesianGrid strokeDasharray="3 3"/>
+                                                <XAxis
+                                                    dataKey="name"
+                                                    angle={-20}
+                                                    textAnchor="end"
+                                                    interval={0}
+                                                    height={65}
+                                                    tick={{fontSize: 11}}
+                                                />
+                                                <YAxis allowDecimals={false}/>
+                                                <Tooltip/>
+                                                <Bar
+                                                    dataKey="total"
+                                                    name="Count"
+                                                    fill="#15803d"
+                                                    radius={[6, 6, 0, 0]}
+                                                />
+                                            </BarChart>
+                                        </ResponsiveContainer>
+                                    </div>
+                                </section>
+
+                                <section className="rounded-2xl border border-[#e4e9df] bg-white p-5 shadow-sm">
+                                    <h3 className="font-semibold">Swap request breakdown</h3>
+                                    <p className="mt-1 text-sm text-[#718174]">
+                                        Current requests by status.
+                                    </p>
+
+                                    <div className="mt-5 h-80">
+                                        <ResponsiveContainer width="100%" height="100%">
+                                            <PieChart>
+                                                <Pie
+                                                    data={swapData}
+                                                    dataKey="value"
+                                                    nameKey="name"
+                                                    cx="50%"
+                                                    cy="45%"
+                                                    outerRadius={95}
+                                                    label={({name, value}) => `${name}: ${value}`}
+                                                >
+                                                    {swapData.map((entry, index) => (
+                                                        <Cell
+                                                            key={entry.name}
+                                                            fill={chartColors[index % chartColors.length]}
+                                                        />
+                                                    ))}
+                                                </Pie>
+                                                <Tooltip/>
+                                                <Legend/>
+                                            </PieChart>
+                                        </ResponsiveContainer>
+                                    </div>
+                                </section>
+
+                                <section
+                                    className="rounded-2xl border border-[#e4e9df] bg-white p-5 shadow-sm xl:col-span-2">
+                                    <h3 className="font-semibold">User and listing status</h3>
+                                    <p className="mt-1 text-sm text-[#718174]">
+                                        Active versus inactive users and available versus swapped listings.
+                                    </p>
+
+                                    <div className="mt-5 grid gap-5 md:grid-cols-2">
+                                        {[
+                                            {
+                                                title: "User accounts",
+                                                data: communityData.slice(0, 2),
+                                            },
+                                            {
+                                                title: "Clothing listings",
+                                                data: communityData.slice(2, 4),
+                                            },
+                                        ].map((group) => (
+                                            <div key={group.title}>
+                                                <h4 className="mb-2 text-sm font-medium">
+                                                    {group.title}
+                                                </h4>
+                                                <div className="h-64">
+                                                    <ResponsiveContainer width="100%" height="100%">
+                                                        <PieChart>
+                                                            <Pie
+                                                                data={group.data}
+                                                                dataKey="value"
+                                                                nameKey="name"
+                                                                cx="50%"
+                                                                cy="45%"
+                                                                outerRadius={75}
+                                                                label={({value}) => value}
+                                                            >
+                                                                {group.data.map((entry, index) => (
+                                                                    <Cell
+                                                                        key={entry.name}
+                                                                        fill={chartColors[index + (group.title === "Clothing listings" ? 2 : 0)]}
+                                                                    />
+                                                                ))}
+                                                            </Pie>
+                                                            <Tooltip/>
+                                                            <Legend/>
+                                                        </PieChart>
+                                                    </ResponsiveContainer>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </section>
+                            </div>
+                        </>
+                    ) : (
+                        <p className="rounded-2xl border border-[#e4e9df] bg-white p-8 text-center text-sm text-[#718174]">
+                            Analytics data is unavailable.
+                        </p>
+                    )}
+                    <AdminActivityLogs />
+                </section>
+
             </main>
 
             {pendingUser && (
