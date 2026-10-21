@@ -3,8 +3,8 @@ import { Client } from "@stomp/stompjs";
 import SockJS from "sockjs-client";
 
 const WS_URL = import.meta.env.PROD
-    ? "wss://rewear-backend-5z47.onrender.com/ws"
-    : "ws://localhost:8080/ws";
+    ? "https://rewear-backend-5z47.onrender.com/ws"
+    : "http://localhost:8080/ws";
 
 export function connectToChat({
                                   swapRequestId,
